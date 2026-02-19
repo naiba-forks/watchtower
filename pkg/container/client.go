@@ -42,7 +42,7 @@ type Client interface {
 //   - DOCKER_TLS_VERIFY		whether to verify tls certificates
 //   - DOCKER_API_VERSION	the minimum docker api version to work with
 func NewClient(opts ClientOptions) Client {
-	cli, err := mobyClient.NewClientWithOpts(mobyClient.FromEnv, mobyClient.WithAPIVersionNegotiation())
+	cli, err := mobyClient.New(mobyClient.FromEnv, mobyClient.WithAPIVersionNegotiation())
 
 	if err != nil {
 		log.Fatalf("Error instantiating Docker client: %s", err)
