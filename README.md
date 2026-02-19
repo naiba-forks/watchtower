@@ -30,6 +30,7 @@ docker run --detach \
 | `WATCHTOWER_CLEANUP` | Remove old images after update |
 | `WATCHTOWER_LABEL_ENABLE` | Only update containers with enable label |
 | `WATCHTOWER_DISABLE_CONTAINERS` | Comma-separated list of containers to exclude |
+| `WATCHTOWER_DISABLE_IMAGES` | Comma-separated list of image names to exclude |
 | `WATCHTOWER_SCOPE` | Monitoring scope for multi-instance setups |
 | `WATCHTOWER_NOTIFICATION_URL` | Shoutrrr notification URL |
 | `WATCHTOWER_LIFECYCLE_HOOKS` | Enable pre/post update lifecycle hooks |
@@ -74,6 +75,8 @@ This fork removes features not needed for simple homelab use:
 - Removed HTTP API and Prometheus metrics
 - Removed legacy notification backends (Email, Slack, MS Teams, Gotify)
 - Removed documentation site, Grafana dashboards, GoReleaser config
+- Migrated from `github.com/docker/docker` to `github.com/moby/moby` sub-modules
+- Added `WATCHTOWER_DISABLE_IMAGES` for filtering by image name
 - Kept: core auto-update, Shoutrrr notifications, filtering, lifecycle hooks
 
 ## License
