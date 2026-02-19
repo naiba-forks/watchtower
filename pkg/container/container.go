@@ -7,18 +7,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/containrrr/watchtower/internal/util"
-	wt "github.com/containrrr/watchtower/pkg/types"
+	"github.com/naiba-forks/watchtower/internal/util"
+	wt "github.com/naiba-forks/watchtower/pkg/types"
 	"github.com/sirupsen/logrus"
 
-	"github.com/docker/docker/api/types"
-	dockercontainer "github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/network"
 )
 
 // NewContainer returns a new Container instance instantiated with the
 // specified ContainerInfo and ImageInfo structs.
-func NewContainer(containerInfo *types.ContainerJSON, imageInfo *types.ImageInspect) *Container {
+func NewContainer(containerInfo *container.InspectResponse, imageInfo *image.InspectResponse) *Container {
 	return &Container{
 		containerInfo: containerInfo,
 		imageInfo:     imageInfo,
@@ -30,8 +30,8 @@ type Container struct {
 	LinkedToRestarting bool
 	Stale              bool
 
-	containerInfo *types.ContainerJSON
-	imageInfo     *types.ImageInspect
+	containerInfo *container.InspectResponse
+	imageInfo     *image.InspectResponse
 }
 
 // IsLinkedToRestarting returns the current value of the LinkedToRestarting field for the container
@@ -55,7 +55,7 @@ func (c *Container) SetStale(value bool) {
 }
 
 // ContainerInfo fetches JSON info for the container
-func (c Container) ContainerInfo() *types.ContainerJSON {
+func (c Container) ContainerInfo() *container.InspectResponse {
 	return c.containerInfo
 }
 
@@ -280,7 +280,7 @@ func (c Container) StopSignal() string {
 // running container with the ContainerConfig from the image that container was
 // started from. This function returns a ContainerConfig which contains just
 // the options overridden at runtime.
-func (c Container) GetCreateConfig() *dockercontainer.Config {
+func (c Container) GetCreateConfig() *container.Config {
 	config := c.containerInfo.Config
 	hostConfig := c.containerInfo.HostConfig
 	imageConfig := c.imageInfo.Config
@@ -334,7 +334,7 @@ func (c Container) GetCreateConfig() *dockercontainer.Config {
 	config.Volumes = util.StructMapSubtract(config.Volumes, imageConfig.Volumes)
 
 	for k := range config.ExposedPorts {
-		if _, ok := imageConfig.ExposedPorts[string(k)]; ok {
+		if _, ok := imageConfig.ExposedPorts[k.String()]; ok {
 			delete(config.ExposedPorts, k)
 		}
 	}
@@ -348,7 +348,7 @@ func (c Container) GetCreateConfig() *dockercontainer.Config {
 
 // GetCreateHostConfig returns the container's current HostConfig with any links
 // re-written so that they can be re-submitted to the Docker create API.
-func (c Container) GetCreateHostConfig() *dockercontainer.HostConfig {
+func (c Container) GetCreateHostConfig() *container.HostConfig {
 	hostConfig := c.containerInfo.HostConfig
 
 	for i, link := range hostConfig.Links {
@@ -367,7 +367,7 @@ func (c Container) HasImageInfo() bool {
 }
 
 // ImageInfo fetches the ImageInspect data of the current container
-func (c Container) ImageInfo() *types.ImageInspect {
+func (c Container) ImageInfo() *image.InspectResponse {
 	return c.imageInfo
 }
 
@@ -396,7 +396,7 @@ func (c Container) VerifyConfiguration() error {
 	// Instead of returning an error here, we just create an empty map
 	// This should allow for updating containers where the exposed ports are missing
 	if len(hostConfig.PortBindings) > 0 && containerConfig.ExposedPorts == nil {
-		containerConfig.ExposedPorts = make(map[nat.Port]struct{})
+		containerConfig.ExposedPorts = make(network.PortSet)
 	}
 
 	return nil

@@ -3,28 +3,28 @@ package registry
 import (
 	"context"
 
-	"github.com/containrrr/watchtower/pkg/registry/helpers"
-	watchtowerTypes "github.com/containrrr/watchtower/pkg/types"
 	ref "github.com/distribution/reference"
-	"github.com/docker/docker/api/types/image"
+	mobyClient "github.com/moby/moby/client"
+	"github.com/naiba-forks/watchtower/pkg/registry/helpers"
+	watchtowerTypes "github.com/naiba-forks/watchtower/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 
-func GetPullOptions(imageName string) (image.PullOptions, error) {
+func GetPullOptions(imageName string) (mobyClient.ImagePullOptions, error) {
 	auth, err := EncodedAuth(imageName)
 	log.Debugf("Got image name: %s", imageName)
 	if err != nil {
-		return image.PullOptions{}, err
+		return mobyClient.ImagePullOptions{}, err
 	}
 
 	if auth == "" {
-		return image.PullOptions{}, nil
+		return mobyClient.ImagePullOptions{}, nil
 	}
 
 	// CREDENTIAL: Uncomment to log docker config auth
 	// log.Tracef("Got auth value: %s", auth)
 
-	return image.PullOptions{
+	return mobyClient.ImagePullOptions{
 		RegistryAuth:  auth,
 		PrivilegeFunc: DefaultAuthHandler,
 	}, nil

@@ -3,12 +3,12 @@ package actions
 import (
 	"errors"
 
-	"github.com/containrrr/watchtower/internal/util"
-	"github.com/containrrr/watchtower/pkg/container"
-	"github.com/containrrr/watchtower/pkg/lifecycle"
-	"github.com/containrrr/watchtower/pkg/session"
-	"github.com/containrrr/watchtower/pkg/sorter"
-	"github.com/containrrr/watchtower/pkg/types"
+	"github.com/naiba-forks/watchtower/internal/util"
+	"github.com/naiba-forks/watchtower/pkg/container"
+	"github.com/naiba-forks/watchtower/pkg/lifecycle"
+	"github.com/naiba-forks/watchtower/pkg/session"
+	"github.com/naiba-forks/watchtower/pkg/sorter"
+	"github.com/naiba-forks/watchtower/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
 

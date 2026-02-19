@@ -3,9 +3,9 @@ package notifications_test
 import (
 	"time"
 
-	"github.com/containrrr/watchtower/cmd"
-	"github.com/containrrr/watchtower/internal/flags"
-	"github.com/containrrr/watchtower/pkg/notifications"
+	"github.com/naiba-forks/watchtower/cmd"
+	"github.com/naiba-forks/watchtower/internal/flags"
+	"github.com/naiba-forks/watchtower/pkg/notifications"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

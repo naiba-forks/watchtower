@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	t "github.com/containrrr/watchtower/pkg/types"
+	t "github.com/naiba-forks/watchtower/pkg/types"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
-	imagetypes "github.com/docker/docker/api/types/image"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/image"
+	mobyClient "github.com/moby/moby/client"
 	O "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 )
@@ -63,10 +63,10 @@ func GetContainerHandlers(containerRefs ...*ContainerRef) []http.HandlerFunc {
 	return handlers
 }
 
-func createFilterArgs(statuses []string) filters.Args {
-	args := filters.NewArgs()
+func createFilterArgs(statuses []string) mobyClient.Filters {
+	args := mobyClient.Filters{}
 	for _, status := range statuses {
-		args.Add("status", status)
+		args = args.Add("status", status)
 	}
 	return args
 }
@@ -166,7 +166,7 @@ func getContainerHandler(containerId string, responseHandler http.HandlerFunc) h
 }
 
 // GetContainerHandler mocks the GET containers/{id}/json endpoint
-func GetContainerHandler(containerID string, containerInfo *types.ContainerJSON) http.HandlerFunc {
+func GetContainerHandler(containerID string, containerInfo *container.InspectResponse) http.HandlerFunc {
 	responseHandler := containerNotFoundResponse(containerID)
 	if containerInfo != nil {
 		responseHandler = ghttp.RespondWithJSONEncoded(http.StatusOK, containerInfo)
@@ -175,17 +175,17 @@ func GetContainerHandler(containerID string, containerInfo *types.ContainerJSON)
 }
 
 // GetImageHandler mocks the GET images/{id}/json endpoint
-func GetImageHandler(imageInfo *types.ImageInspect) http.HandlerFunc {
+func GetImageHandler(imageInfo *image.InspectResponse) http.HandlerFunc {
 	return getImageHandler(t.ImageID(imageInfo.ID), ghttp.RespondWithJSONEncoded(http.StatusOK, imageInfo))
 }
 
 // ListContainersHandler mocks the GET containers/json endpoint, filtering the returned containers based on statuses
 func ListContainersHandler(statuses ...string) http.HandlerFunc {
 	filterArgs := createFilterArgs(statuses)
-	bytes, err := filterArgs.MarshalJSON()
+	filterBytes, err := json.Marshal(filterArgs)
 	O.ExpectWithOffset(1, err).ShouldNot(O.HaveOccurred())
 	query := url.Values{
-		"filters": []string{string(bytes)},
+		"filters": []string{string(filterBytes)},
 	}
 	return ghttp.CombineHandlers(
 		ghttp.VerifyRequest("GET", O.HaveSuffix("containers/json"), query.Encode()),
@@ -193,17 +193,16 @@ func ListContainersHandler(statuses ...string) http.HandlerFunc {
 	)
 }
 
-func respondWithFilteredContainers(filters filters.Args) http.HandlerFunc {
+func respondWithFilteredContainers(filters mobyClient.Filters) http.HandlerFunc {
 	containersJSON, err := getMockJSONFile("./mocks/data/containers.json")
 	O.ExpectWithOffset(2, err).ShouldNot(O.HaveOccurred())
-	var filteredContainers []types.Container
-	var containers []types.Container
+	var filteredContainers []container.Summary
+	var containers []container.Summary
 	O.ExpectWithOffset(2, json.Unmarshal(containersJSON, &containers)).To(O.Succeed())
+	statusSet := filters["status"]
 	for _, v := range containers {
-		for _, key := range filters.Get("status") {
-			if v.State == key {
-				filteredContainers = append(filteredContainers, v)
-			}
+		if statusSet[string(v.State)] {
+			filteredContainers = append(filteredContainers, v)
 		}
 	}
 
@@ -260,15 +259,15 @@ func RemoveImageHandler(imagesWithParents map[string][]string) http.HandlerFunc 
 		ghttp.VerifyRequest("DELETE", O.MatchRegexp("/images/.*")),
 		func(w http.ResponseWriter, r *http.Request) {
 			parts := strings.Split(r.URL.Path, `/`)
-			image := parts[len(parts)-1]
+			imageID := parts[len(parts)-1]
 
-			if parents, found := imagesWithParents[image]; found {
-				items := []imagetypes.DeleteResponse{
-					{Untagged: image},
-					{Deleted: image},
+			if parents, found := imagesWithParents[imageID]; found {
+				items := []image.DeleteResponse{
+					{Untagged: imageID},
+					{Deleted: imageID},
 				}
 				for _, parent := range parents {
-					items = append(items, imagetypes.DeleteResponse{Deleted: parent})
+					items = append(items, image.DeleteResponse{Deleted: parent})
 				}
 				ghttp.RespondWithJSONEncoded(http.StatusOK, items)(w, r)
 			} else {
