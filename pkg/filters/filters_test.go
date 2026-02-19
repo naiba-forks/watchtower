@@ -139,7 +139,7 @@ func TestFilterByNoneScope(t *testing.T) {
 }
 
 func TestBuildFilterNoneScope(t *testing.T) {
-	filter, desc := BuildFilter(nil, nil, false, "none")
+	filter, desc := BuildFilter(nil, nil, nil, false, "none")
 
 	assert.Contains(t, desc, "without a scope")
 
@@ -171,8 +171,33 @@ func TestFilterByDisabledLabel(t *testing.T) {
 	container.On("Enabled").Return(false, true)
 	assert.False(t, filter(container))
 	container.AssertExpectations(t)
+}
+
+func TestBuildFilterDisableImages(t *testing.T) {
+	filter, desc := BuildFilter([]string{}, []string{}, []string{"ghcr.io/naiba/cloudcode-base", "registry"}, false, "")
+	assert.Contains(t, desc, "not using image")
+	assert.Contains(t, desc, "ghcr.io/naiba/cloudcode-base")
+
+	container := new(mocks.FilterableContainer)
+	container.On("ImageName").Return("nginx:latest")
+	container.On("Enabled").Return(false, false)
+	assert.True(t, filter(container))
+	container.AssertExpectations(t)
 
 	container = new(mocks.FilterableContainer)
+	container.On("ImageName").Return("ghcr.io/naiba/cloudcode-base:latest")
+	container.On("Enabled").Return(false, false)
+	assert.False(t, filter(container))
+	container.AssertExpectations(t)
+
+	container = new(mocks.FilterableContainer)
+	container.On("ImageName").Return("registry:2")
+	container.On("Enabled").Return(false, false)
+	assert.False(t, filter(container))
+	container.AssertExpectations(t)
+
+	container = new(mocks.FilterableContainer)
+	container.On("ImageName").Return("ghcr.io/other/image:v1")
 	container.On("Enabled").Return(false, false)
 	assert.True(t, filter(container))
 	container.AssertExpectations(t)
@@ -218,7 +243,7 @@ func TestFilterByImage(t *testing.T) {
 func TestBuildFilter(t *testing.T) {
 	names := []string{"test", "valid"}
 
-	filter, desc := BuildFilter(names, []string{}, false, "")
+	filter, desc := BuildFilter(names, []string{}, nil, false, "")
 	assert.Contains(t, desc, "test")
 	assert.Contains(t, desc, "or")
 	assert.Contains(t, desc, "valid")
@@ -257,7 +282,7 @@ func TestBuildFilterEnableLabel(t *testing.T) {
 	var names []string
 	names = append(names, "test")
 
-	filter, desc := BuildFilter(names, []string{}, true, "")
+	filter, desc := BuildFilter(names, []string{}, nil, true, "")
 	assert.Contains(t, desc, "using enable label")
 
 	container := new(mocks.FilterableContainer)
@@ -284,7 +309,7 @@ func TestBuildFilterEnableLabel(t *testing.T) {
 }
 
 func TestBuildFilterDisableContainer(t *testing.T) {
-	filter, desc := BuildFilter([]string{}, []string{"excluded", "notfound"}, false, "")
+	filter, desc := BuildFilter([]string{}, []string{"excluded", "notfound"}, nil, false, "")
 	assert.Contains(t, desc, "not named")
 	assert.Contains(t, desc, "excluded")
 	assert.Contains(t, desc, "or")

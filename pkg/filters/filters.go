@@ -57,6 +57,23 @@ func FilterByDisableNames(disableNames []string, baseFilter t.Filter) t.Filter {
 	}
 }
 
+// FilterByDisableImages returns all containers whose image doesn't match any of the specified images
+func FilterByDisableImages(disableImages []string, baseFilter t.Filter) t.Filter {
+	if len(disableImages) == 0 {
+		return baseFilter
+	}
+
+	return func(c t.FilterableContainer) bool {
+		imageName := strings.Split(c.ImageName(), ":")[0]
+		for _, disableImage := range disableImages {
+			if imageName == disableImage {
+				return false
+			}
+		}
+		return baseFilter(c)
+	}
+}
+
 // FilterByEnableLabel returns all containers that have the enabled label set
 func FilterByEnableLabel(baseFilter t.Filter) t.Filter {
 	return func(c t.FilterableContainer) bool {
@@ -120,11 +137,12 @@ func FilterByImage(images []string, baseFilter t.Filter) t.Filter {
 }
 
 // BuildFilter creates the needed filter of containers
-func BuildFilter(names []string, disableNames []string, enableLabel bool, scope string) (t.Filter, string) {
+func BuildFilter(names []string, disableNames []string, disableImages []string, enableLabel bool, scope string) (t.Filter, string) {
 	sb := strings.Builder{}
 	filter := NoFilter
 	filter = FilterByNames(names, filter)
 	filter = FilterByDisableNames(disableNames, filter)
+	filter = FilterByDisableImages(disableImages, filter)
 
 	if len(names) > 0 {
 		sb.WriteString("which name matches \"")
@@ -141,6 +159,16 @@ func BuildFilter(names []string, disableNames []string, enableLabel bool, scope 
 		for i, n := range disableNames {
 			sb.WriteString(n)
 			if i < len(disableNames)-1 {
+				sb.WriteString(`" or "`)
+			}
+		}
+		sb.WriteString(`", `)
+	}
+	if len(disableImages) > 0 {
+		sb.WriteString("not using image \"")
+		for i, img := range disableImages {
+			sb.WriteString(img)
+			if i < len(disableImages)-1 {
 				sb.WriteString(`" or "`)
 			}
 		}

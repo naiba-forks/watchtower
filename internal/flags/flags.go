@@ -93,6 +93,11 @@ func RegisterSystemFlags(rootCmd *cobra.Command) {
 		regexp.MustCompile("[, ]+").Split(envString("WATCHTOWER_DISABLE_CONTAINERS"), -1),
 		"Comma-separated list of containers to explicitly exclude from watching.")
 
+	flags.StringSlice(
+		"disable-images",
+		regexp.MustCompile("[, ]+").Split(envString("WATCHTOWER_DISABLE_IMAGES"), -1),
+		"Comma-separated list of image names to explicitly exclude from watching.")
+
 	flags.StringP(
 		"log-format",
 		"l",
