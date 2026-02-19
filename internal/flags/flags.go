@@ -153,29 +153,6 @@ func RegisterSystemFlags(rootCmd *cobra.Command) {
 		envBool("WATCHTOWER_ROLLING_RESTART"),
 		"Restart containers one at a time")
 
-	flags.BoolP(
-		"http-api-update",
-		"",
-		envBool("WATCHTOWER_HTTP_API_UPDATE"),
-		"Runs Watchtower in HTTP API mode, so that image updates must to be triggered by a request")
-	flags.BoolP(
-		"http-api-metrics",
-		"",
-		envBool("WATCHTOWER_HTTP_API_METRICS"),
-		"Runs Watchtower with the Prometheus metrics API enabled")
-
-	flags.StringP(
-		"http-api-token",
-		"",
-		envString("WATCHTOWER_HTTP_API_TOKEN"),
-		"Sets an authentication token to HTTP API requests.")
-
-	flags.BoolP(
-		"http-api-periodic-polls",
-		"",
-		envBool("WATCHTOWER_HTTP_API_PERIODIC_POLLS"),
-		"Also run periodic updates (specified with --interval and --schedule) if HTTP API is enabled")
-
 	// https://no-color.org/
 	flags.BoolP(
 		"no-color",
@@ -221,7 +198,7 @@ func RegisterNotificationFlags(rootCmd *cobra.Command) {
 		"notifications",
 		"n",
 		envStringSlice("WATCHTOWER_NOTIFICATIONS"),
-		" Notification types to send (valid: email, slack, msteams, gotify, shoutrrr)")
+		"Notification types to send (valid: shoutrrr)")
 
 	flags.String(
 		"notifications-level",
@@ -239,122 +216,6 @@ func RegisterNotificationFlags(rootCmd *cobra.Command) {
 		"",
 		envString("WATCHTOWER_NOTIFICATIONS_HOSTNAME"),
 		"Custom hostname for notification titles")
-
-	flags.StringP(
-		"notification-email-from",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_EMAIL_FROM"),
-		"Address to send notification emails from")
-
-	flags.StringP(
-		"notification-email-to",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_EMAIL_TO"),
-		"Address to send notification emails to")
-
-	flags.IntP(
-		"notification-email-delay",
-		"",
-		envInt("WATCHTOWER_NOTIFICATION_EMAIL_DELAY"),
-		"Delay before sending notifications, expressed in seconds")
-
-	flags.StringP(
-		"notification-email-server",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_EMAIL_SERVER"),
-		"SMTP server to send notification emails through")
-
-	flags.IntP(
-		"notification-email-server-port",
-		"",
-		envInt("WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT"),
-		"SMTP server port to send notification emails through")
-
-	flags.BoolP(
-		"notification-email-server-tls-skip-verify",
-		"",
-		envBool("WATCHTOWER_NOTIFICATION_EMAIL_SERVER_TLS_SKIP_VERIFY"),
-		`Controls whether watchtower verifies the SMTP server's certificate chain and host name.
-Should only be used for testing.`)
-
-	flags.StringP(
-		"notification-email-server-user",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER"),
-		"SMTP server user for sending notifications")
-
-	flags.StringP(
-		"notification-email-server-password",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD"),
-		"SMTP server password for sending notifications")
-
-	flags.StringP(
-		"notification-email-subjecttag",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_EMAIL_SUBJECTTAG"),
-		"Subject prefix tag for notifications via mail")
-
-	flags.StringP(
-		"notification-slack-hook-url",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL"),
-		"The Slack Hook URL to send notifications to")
-
-	flags.StringP(
-		"notification-slack-identifier",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_SLACK_IDENTIFIER"),
-		"A string which will be used to identify the messages coming from this watchtower instance")
-
-	flags.StringP(
-		"notification-slack-channel",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_SLACK_CHANNEL"),
-		"A string which overrides the webhook's default channel. Example: #my-custom-channel")
-
-	flags.StringP(
-		"notification-slack-icon-emoji",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_SLACK_ICON_EMOJI"),
-		"An emoji code string to use in place of the default icon")
-
-	flags.StringP(
-		"notification-slack-icon-url",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_SLACK_ICON_URL"),
-		"An icon image URL string to use in place of the default icon")
-
-	flags.StringP(
-		"notification-msteams-hook",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_MSTEAMS_HOOK_URL"),
-		"The MSTeams WebHook URL to send notifications to")
-
-	flags.BoolP(
-		"notification-msteams-data",
-		"",
-		envBool("WATCHTOWER_NOTIFICATION_MSTEAMS_USE_LOG_DATA"),
-		"The MSTeams notifier will try to extract log entry fields as MSTeams message facts")
-
-	flags.StringP(
-		"notification-gotify-url",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_GOTIFY_URL"),
-		"The Gotify URL to send notifications to")
-
-	flags.StringP(
-		"notification-gotify-token",
-		"",
-		envString("WATCHTOWER_NOTIFICATION_GOTIFY_TOKEN"),
-		"The Gotify Application required to query the Gotify API")
-
-	flags.BoolP(
-		"notification-gotify-tls-skip-verify",
-		"",
-		envBool("WATCHTOWER_NOTIFICATION_GOTIFY_TLS_SKIP_VERIFY"),
-		`Controls whether watchtower verifies the Gotify server's certificate chain and host name.
-Should only be used for testing.`)
 
 	flags.String(
 		"notification-template",
@@ -425,9 +286,7 @@ func SetDefaults() {
 	viper.SetDefault("WATCHTOWER_TIMEOUT", time.Second*10)
 	viper.SetDefault("WATCHTOWER_NOTIFICATIONS", []string{})
 	viper.SetDefault("WATCHTOWER_NOTIFICATIONS_LEVEL", "info")
-	viper.SetDefault("WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT", 25)
-	viper.SetDefault("WATCHTOWER_NOTIFICATION_EMAIL_SUBJECTTAG", "")
-	viper.SetDefault("WATCHTOWER_NOTIFICATION_SLACK_IDENTIFIER", "watchtower")
+
 	viper.SetDefault("WATCHTOWER_LOG_LEVEL", "info")
 	viper.SetDefault("WATCHTOWER_LOG_FORMAT", "auto")
 }
@@ -513,12 +372,7 @@ func GetSecretsFromFiles(rootCmd *cobra.Command) {
 	flags := rootCmd.PersistentFlags()
 
 	secrets := []string{
-		"notification-email-server-password",
-		"notification-slack-hook-url",
-		"notification-msteams-hook",
-		"notification-gotify-token",
 		"notification-url",
-		"http-api-token",
 	}
 	for _, secret := range secrets {
 		if err := getSecretFromFile(flags, secret); err != nil {

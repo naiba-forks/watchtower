@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"errors"
 	"math"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -14,12 +12,8 @@ import (
 	"github.com/containrrr/watchtower/internal/actions"
 	"github.com/containrrr/watchtower/internal/flags"
 	"github.com/containrrr/watchtower/internal/meta"
-	"github.com/containrrr/watchtower/pkg/api"
-	apiMetrics "github.com/containrrr/watchtower/pkg/api/metrics"
-	"github.com/containrrr/watchtower/pkg/api/update"
 	"github.com/containrrr/watchtower/pkg/container"
 	"github.com/containrrr/watchtower/pkg/filters"
-	"github.com/containrrr/watchtower/pkg/metrics"
 	"github.com/containrrr/watchtower/pkg/notifications"
 	t "github.com/containrrr/watchtower/pkg/types"
 	"github.com/robfig/cron"
@@ -71,7 +65,6 @@ func init() {
 
 // Execute the root func and exit in case of errors
 func Execute() {
-	rootCmd.AddCommand(notifyUpgradeCommand)
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -138,10 +131,6 @@ func PreRun(cmd *cobra.Command, _ []string) {
 func Run(c *cobra.Command, names []string) {
 	filter, filterDesc := filters.BuildFilter(names, disableContainers, enableLabel, scope)
 	runOnce, _ := c.PersistentFlags().GetBool("run-once")
-	enableUpdateAPI, _ := c.PersistentFlags().GetBool("http-api-update")
-	enableMetricsAPI, _ := c.PersistentFlags().GetBool("http-api-metrics")
-	unblockHTTPAPI, _ := c.PersistentFlags().GetBool("http-api-periodic-polls")
-	apiToken, _ := c.PersistentFlags().GetString("http-api-token")
 	healthCheck, _ := c.PersistentFlags().GetBool("health-check")
 
 	if healthCheck {
@@ -175,35 +164,7 @@ func Run(c *cobra.Command, names []string) {
 		logNotifyExit(err)
 	}
 
-	// The lock is shared between the scheduler and the HTTP API. It only allows one update to run at a time.
-	updateLock := make(chan bool, 1)
-	updateLock <- true
-
-	httpAPI := api.New(apiToken)
-
-	if enableUpdateAPI {
-		updateHandler := update.New(func(images []string) {
-			metric := runUpdatesWithNotifications(filters.FilterByImage(images, filter))
-			metrics.RegisterScan(metric)
-		}, updateLock)
-		httpAPI.RegisterFunc(updateHandler.Path, updateHandler.Handle)
-		// If polling isn't enabled the scheduler is never started, and
-		// we need to trigger the startup messages manually.
-		if !unblockHTTPAPI {
-			writeStartupMessage(c, time.Time{}, filterDesc)
-		}
-	}
-
-	if enableMetricsAPI {
-		metricsHandler := apiMetrics.New()
-		httpAPI.RegisterHandler(metricsHandler.Path, metricsHandler.Handle)
-	}
-
-	if err := httpAPI.Start(enableUpdateAPI && !unblockHTTPAPI); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Error("failed to start API", err)
-	}
-
-	if err := runUpgradesOnSchedule(c, filter, filterDesc, updateLock); err != nil {
+	if err := runUpgradesOnSchedule(c, filter, filterDesc, nil); err != nil {
 		log.Error(err)
 	}
 
@@ -322,11 +283,8 @@ func runUpgradesOnSchedule(c *cobra.Command, filter t.Filter, filtering string, 
 			select {
 			case v := <-lock:
 				defer func() { lock <- v }()
-				metric := runUpdatesWithNotifications(filter)
-				metrics.RegisterScan(metric)
+				runUpdatesWithNotifications(filter)
 			default:
-				// Update was skipped
-				metrics.RegisterScan(nil)
 				log.Debug("Skipped another update already running.")
 			}
 
@@ -356,7 +314,7 @@ func runUpgradesOnSchedule(c *cobra.Command, filter t.Filter, filtering string, 
 	return nil
 }
 
-func runUpdatesWithNotifications(filter t.Filter) *metrics.Metric {
+func runUpdatesWithNotifications(filter t.Filter) {
 	notifier.StartNotification()
 	updateParams := t.UpdateParams{
 		Filter:          filter,
@@ -374,11 +332,16 @@ func runUpdatesWithNotifications(filter t.Filter) *metrics.Metric {
 		log.Error(err)
 	}
 	notifier.SendNotification(result)
-	metricResults := metrics.NewMetric(result)
+
+	scanned, updated, failed := 0, 0, 0
+	if result != nil {
+		scanned = len(result.Scanned())
+		updated = len(result.Updated()) + len(result.Stale())
+		failed = len(result.Failed())
+	}
 	notifications.LocalLog.WithFields(log.Fields{
-		"Scanned": metricResults.Scanned,
-		"Updated": metricResults.Updated,
-		"Failed":  metricResults.Failed,
+		"Scanned": scanned,
+		"Updated": updated,
+		"Failed":  failed,
 	}).Info("Session done")
-	return metricResults
 }

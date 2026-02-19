@@ -31,53 +31,8 @@ func NewNotifier(c *cobra.Command) ty.Notifier {
 	return createNotifier(urls, logLevel, tplString, !reportTemplate, data, stdout, delay)
 }
 
-// AppendLegacyUrls creates shoutrrr equivalent URLs from legacy notification flags
 func AppendLegacyUrls(urls []string, cmd *cobra.Command) ([]string, time.Duration) {
-
-	// Parse types and create notifiers.
-	types, err := cmd.Flags().GetStringSlice("notifications")
-	if err != nil {
-		log.WithError(err).Fatal("could not read notifications argument")
-	}
-
-	legacyDelay := time.Duration(0)
-
-	for _, t := range types {
-
-		var legacyNotifier ty.ConvertibleNotifier
-		var err error
-
-		switch t {
-		case emailType:
-			legacyNotifier = newEmailNotifier(cmd)
-		case slackType:
-			legacyNotifier = newSlackNotifier(cmd)
-		case msTeamsType:
-			legacyNotifier = newMsTeamsNotifier(cmd)
-		case gotifyType:
-			legacyNotifier = newGotifyNotifier(cmd)
-		case shoutrrrType:
-			continue
-		default:
-			log.Fatalf("Unknown notification type %q", t)
-			// Not really needed, used for nil checking static analysis
-			continue
-		}
-
-		shoutrrrURL, err := legacyNotifier.GetURL(cmd)
-		if err != nil {
-			log.Fatal("failed to create notification config: ", err)
-		}
-		urls = append(urls, shoutrrrURL)
-
-		if delayNotifier, ok := legacyNotifier.(ty.DelayNotifier); ok {
-			legacyDelay = delayNotifier.GetDelay()
-		}
-
-		log.WithField("URL", shoutrrrURL).Trace("created Shoutrrr URL from legacy notifier")
-	}
-
-	delay := GetDelay(cmd, legacyDelay)
+	delay := GetDelay(cmd, 0)
 	return urls, delay
 }
 
@@ -127,10 +82,6 @@ func GetTemplateData(c *cobra.Command) StaticData {
 	title := ""
 	if skip, _ := f.GetBool("notification-skip-title"); !skip {
 		tag, _ := f.GetString("notification-title-tag")
-		if tag == "" {
-			// For legacy email support
-			tag, _ = f.GetString("notification-email-subjecttag")
-		}
 		title = GetTitle(hostname, tag)
 	}
 
