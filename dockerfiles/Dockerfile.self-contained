@@ -8,7 +8,7 @@ RUN apk add --no-cache \
 WORKDIR /app
 COPY . .
 
-RUN CGO_ENABLED=0 go build -a -ldflags "-extldflags '-static' -X github.com/containrrr/watchtower/internal/meta.Version=$(git describe --tags 2>/dev/null || echo dev)" -o watchtower .
+RUN CGO_ENABLED=0 go build -a -ldflags "-extldflags '-static' -X github.com/naiba-forks/watchtower/internal/meta.Version=$(git describe --tags 2>/dev/null || echo dev)" -o watchtower .
 
 FROM scratch
 
