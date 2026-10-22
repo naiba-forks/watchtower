@@ -4,14 +4,21 @@
 
 - **统一维护仓库：** [naiba/Dockerfiles](https://github.com/naiba/Dockerfiles)
 - **上游：** [nicholas-fedor/watchtower](https://github.com/nicholas-fedor/watchtower)
-- **计划镜像地址：** `ghcr.io/naiba-forks/watchtower`
-- **计划架构：** `linux/amd64`、`linux/arm64`
+- **镜像地址：** `ghcr.io/naiba-forks/watchtower`
+- **架构：** `linux/amd64`、`linux/arm64`
 
 ## 当前状态
 
-首次基线静态审查进行中，尚未批准或发布本仓库对应的镜像。候选版本为上游 `v1.23.1`，完整提交为 `520f95dea6e3c99b3e0e656e4a2950af11d6397b`。
+首次基线静态恶意行为审查已通过，固定上游 `v1.23.1` / `520f95dea6e3c99b3e0e656e4a2950af11d6397b`。批准范围仅限中央固定构建与 scratch 运行镜像，不是漏洞、功能或历史 fork 兼容性保证。
 
-审查仅针对恶意行为与依赖来源，不是漏洞、正确性或安全保证。通过后，固定提交构建、审查记录和后续更新均由 `naiba/Dockerfiles` 统一维护；镜像是否已发布及对应摘要，以该仓库的记录为准。
+- 中央构建提交：[`f353ab7`](https://github.com/naiba/Dockerfiles/commit/f353ab7)
+- 发布 CI：[39740434494](https://github.com/naiba/Dockerfiles/actions/runs/39740434494)，amd64、arm64 及 publish 全部成功。
+- 已验证标签：`latest`、`v1.23.1`、`v1.23.1-520f95d`。
+- 三个标签的双架构清单摘要：`sha256:ef913ef732cc4755e5ceeb19439bbd619c5f0ff14cf279b015cb9c8637fbe395`。
+- **包当前为 private，需具有读取权限的 GHCR 认证；匿名拉取尚不可用。**
+- [构建与审查记录](https://github.com/naiba/Dockerfiles/tree/master/watchtower)
+
+镜像只含静态程序、固定 builder 的 CA 和内嵌时区数据，不包含 shell、Docker CLI 或凭据辅助程序。中央工作流没有修改、部署或重启服务器。
 
 ## 与历史 fork 的关系
 
