@@ -15,7 +15,7 @@
 - 发布 CI：[39740434494](https://github.com/naiba/Dockerfiles/actions/runs/39740434494)，amd64、arm64 及 publish 全部成功。
 - 已验证标签：`latest`、`v1.23.1`、`v1.23.1-520f95d`。
 - 三个标签的双架构清单摘要：`sha256:ef913ef732cc4755e5ceeb19439bbd619c5f0ff14cf279b015cb9c8637fbe395`。
-- **包当前为 private，需具有读取权限的 GHCR 认证；匿名拉取尚不可用。**
+- **包为 public，已验证匿名拉取可用。**
 - [构建与审查记录](https://github.com/naiba/Dockerfiles/tree/master/watchtower)
 
 镜像只含静态程序、固定 builder 的 CA 和内嵌时区数据，不包含 shell、Docker CLI 或凭据辅助程序。中央工作流没有修改、部署或重启服务器。
